@@ -37,7 +37,7 @@ Texture::Texture(SDL_Surface* surface) {
 		#endif		
 		);
 		
-		SDL_SetAlpha(surface, 0, 0);	
+                SDL_SetSurfaceAlphaMod(surface, 0);
 		SDL_BlitSurface(surface, NULL, tmpsurface, NULL);
 		InitWithSurface(tmpsurface, surface->w, surface->h);
 		SDL_FreeSurface(tmpsurface);		

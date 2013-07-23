@@ -33,20 +33,20 @@ int main(int argc, char *argv[]) {
 		exit(1);
 	}
 	
-	// init all the SDL stuff
-        /*putenv((char*)"SDL_VIDEO_WINDOW_POS");
-	putenv((char*)"SDL_VIDEO_CENTERED=1");
-
-	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);*/
-		
-	SDL_WM_SetCaption("Brain Party", "Brain Party");
-	SDL_WM_SetIcon(SDL_LoadBMP("/opt/brainparty/Content/icon.bmp"), NULL);
-	
 	Mix_OpenAudio(44100, AUDIO_S16SYS, 2, 2048);
 	TTF_Init();
 
-	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 1);
-	SDL_Surface* screen = SDL_SetVideoMode(0, 0, 0, SDL_OPENGLES | SDL_FULLSCREEN);
+        SDL_Window *window = SDL_CreateWindow("Brain Party",
+                SDL_WINDOWPOS_CENTERED,
+                SDL_WINDOWPOS_CENTERED,
+                800, 480,
+                SDL_WINDOW_SHOWN | SDL_WINDOW_OPENGL | SDL_WINDOW_FULLSCREEN);
+
+        SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 1);
+        SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
+
+        SDL_GLContext gl_context = SDL_GL_CreateContext(window);
+
         SDL_ShowCursor(0);
 
 	// clear the screen
@@ -87,7 +87,7 @@ int main(int argc, char *argv[]) {
 	tex_splash->Draw(0, 0);
 
 	// ...update the screen
-	SDL_GL_SwapBuffers();
+        SDL_GL_SwapWindow(window);
 	
 	// and flush out any SDL events that are waiting - this makes the window activate
 	SDL_Event event;
@@ -116,27 +116,6 @@ int main(int argc, char *argv[]) {
 		
 		while (SDL_PollEvent(&event)) {
 			switch (event.type) {
-                                case SDL_ACTIVEEVENT:
-                                    /* Pause music and gameplay on swipe */
-                                    if (!event.active.gain) {
-                                        Mix_PauseMusic();
-                                        /**
-                                         * Blocking wait for events and consume
-                                         * all until we are either re-activated
-                                         * or the app is closed.
-                                         **/
-                                        while (event.type != SDL_ACTIVEEVENT ||
-                                                !event.active.gain) {
-                                            SDL_WaitEvent(&event);
-
-                                            if (event.type == SDL_QUIT) {
-                                                exit(0);
-                                            }
-                                        }
-                                        Mix_ResumeMusic();
-                                        continue;
-                                    }
-                                    break;
 				case SDL_MOUSEBUTTONDOWN:
 					mouse_down = true;
 					Game->TouchStart(event.button.x, event.button.y);
@@ -148,6 +127,15 @@ int main(int argc, char *argv[]) {
 				case SDL_MOUSEMOTION:
 					if (mouse_down) Game->TouchDrag(event.motion.x, event.motion.y);
 					break;
+                                case SDL_FINGERDOWN:
+                                        Game->TouchStart(event.tfinger.x, event.tfinger.y);
+                                        break;
+                                case SDL_FINGERUP:
+                                        Game->TouchStop(event.tfinger.x, event.tfinger.y);
+                                        break;
+                                case SDL_FINGERMOTION:
+                                        Game->TouchDrag(event.tfinger.x, event.tfinger.y);
+                                        break;
 				case SDL_KEYUP:
 					if (Game->ShowingClearScores) {
 						Game->ShowingMessageBox = false;
@@ -177,7 +165,7 @@ int main(int argc, char *argv[]) {
 		seconds_elapsed = ticks_elapsed / 1000.0f;
 		Game->Update(seconds_elapsed);
 		Game->Draw();
-		SDL_GL_SwapBuffers();
+                SDL_GL_SwapWindow(window);
 	}
 	
 	delete Game;
